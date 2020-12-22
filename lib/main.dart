@@ -1,4 +1,6 @@
 import 'package:calculator/unit.dart';
+import 'package:calculator/voice.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:math_expressions/math_expressions.dart';
@@ -32,37 +34,49 @@ Color text;
 String equation = '0';
 String expression = '';
 bool isSwitched = false;
+stt.SpeechToText _speech;
+bool _isListening = false;
+String _text = 'Press the button and start speaking';
+String _reply = 'reply';
+
 class _HomeState extends State<Home> {
-  buttonPressed(String buttonText){
+  @override
+  void initState() {
+    super.initState();
+    _speech = stt.SpeechToText();
+  }
+
+  buttonPressed(String buttonText) {
     setState(() {
-      if (buttonText=='C'){
+      if (buttonText == 'C') {
         equation = '0';
       }
-      else if (buttonText == '⌫'){
-        equation = equation.substring(0 , equation.length -1);
-        if (equation==''){
+      else if (buttonText == '⌫') {
+        equation = equation.substring(0, equation.length - 1);
+        if (equation == '') {
           equation = '0';
         }
       }
-      else if (buttonText == '='){
+      else if (buttonText == '=') {
         expression = equation;
         expression = expression.replaceAll('×', '*');
         expression = expression.replaceAll('÷', '/');
         expression = expression.replaceAll('√', 'sqrt');
+        expression = expression.replaceAll('X', '*');
 
-        try{
+        try {
           Parser p = new Parser();
           Expression exp = p.parse(expression);
 
           ContextModel cm = ContextModel();
           equation = '${exp.evaluate(EvaluationType.REAL, cm)}';
         }
-        catch(e){
+        catch (e) {
           equation = 'Error';
         }
       }
-      else{
-        if (equation=='0'){
+      else {
+        if (equation == '0') {
           equation = buttonText;
         }
         else {
@@ -71,8 +85,9 @@ class _HomeState extends State<Home> {
       }
     });
   }
-  Widget buildButton(String buttonText,Color buttonColor,double _flex, int _flexit ,Color textColor ){
 
+  Widget buildButton(String buttonText, Color buttonColor, double _flex,
+      int _flexit, Color textColor) {
     setState(() {
       text = textColor;
     });
@@ -87,8 +102,9 @@ class _HomeState extends State<Home> {
           fillColor: buttonColor,
           elevation: 5,
           onPressed: () => buttonPressed(buttonText),
-          child: Text(buttonText,style: GoogleFonts.montserrat(
-              textStyle: TextStyle(fontSize:25,color: textColor,fontWeight: FontWeight.w400)
+          child: Text(buttonText, style: GoogleFonts.montserrat(
+              textStyle: TextStyle(
+                  fontSize: 25, color: textColor, fontWeight: FontWeight.w400)
           ),),
         ),
       ),
@@ -98,32 +114,50 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     ScrollController _scrollController = ScrollController();
-    _scrollToBottom(){  _scrollController.jumpTo(_scrollController.position.maxScrollExtent);}
+    _scrollToBottom() {
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    }
     return Scaffold(
       appBar: AppBar(
         elevation: 0.0,
         backgroundColor: Colors.white,
         iconTheme: new IconThemeData(color: Colors.orangeAccent),
+        actions: <Widget>[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: IconButton(
+              icon: Icon(
+                _isListening ? Icons.mic : Icons.mic_none,
+                color: Colors.orange,
+                size: 35,
+              ),
+              onPressed: () {
+                _listen();
+              },
+            ),
+          )
+        ],
       ),
       drawer:
       Drawer(
         child: ListView(
           children: [
             ListTile(
-              onTap: (){
+              onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => Percent()),
                 );
               },
               title: Text('Percent Calculator'),
-              leading: CircleAvatar(child: Image.asset('assets/percentage.png')),
+              leading: CircleAvatar(
+                  child: Image.asset('assets/percentage.png')),
             ),
             Divider(
-                thickness: 1,color: Colors.orangeAccent,height: 1
+                thickness: 1, color: Colors.orangeAccent, height: 1
             ),
             ListTile(
-              onTap: (){
+              onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => Discount()),
@@ -133,21 +167,21 @@ class _HomeState extends State<Home> {
               leading: CircleAvatar(child: Image.asset('assets/discount.png')),
             ),
             Divider(
-                thickness: 1,color: Colors.orangeAccent,height: 1
+                thickness: 1, color: Colors.orangeAccent, height: 1
             ),
-            ListTile(
-              onTap: (){
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Unit()),
-                );
-              },
-              title: Text('Unit Calculator'),
-              leading: CircleAvatar(child: Image.asset('assets/tag.png')),
-            ),
-            Divider(
-                thickness: 1,color: Colors.orangeAccent,height: 1
-            ),
+            // ListTile(
+            //   onTap: (){
+            //     Navigator.push(
+            //       context,
+            //       MaterialPageRoute(builder: (context) => Unit()),
+            //     );
+            //   },
+            //   title: Text('Unit Calculator'),
+            //   leading: CircleAvatar(child: Image.asset('assets/tag.png')),
+            // ),
+            // Divider(
+            //     thickness: 1,color: Colors.orangeAccent,height: 1
+            // ),
           ],
         ),
       ),
@@ -167,8 +201,12 @@ class _HomeState extends State<Home> {
                   children: [
                     Container(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-                        child: Align(alignment: Alignment.centerRight,child: Text(equation,style: GoogleFonts.montserrat(textStyle: TextStyle(fontSize:70,color: Colors.orangeAccent ),),)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20.0, vertical: 8.0),
+                        child: Align(alignment: Alignment.centerRight,
+                            child: Text(equation, style: GoogleFonts.montserrat(
+                              textStyle: TextStyle(fontSize: 70,
+                                  color: Colors.orangeAccent),),)),
                       ),
                     )
                   ],
@@ -191,9 +229,9 @@ class _HomeState extends State<Home> {
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: FlatButton(onPressed: (){
+                    child: FlatButton(onPressed: () {
                       setState(() {
-                        if (equation=='0'){
+                        if (equation == '0') {
                           equation = '√';
                         }
                         else {
@@ -201,15 +239,16 @@ class _HomeState extends State<Home> {
                         }
                       });
                     },
-                      child:  Text('√',style: TextStyle(fontSize: 45,color: Colors.orangeAccent),),),
+                      child: Text('√', style: TextStyle(
+                          fontSize: 45, color: Colors.orangeAccent),),),
                   ),
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: FlatButton(onPressed: (){
+                      child: FlatButton(onPressed: () {
                         setState(() {
-                          if (equation=='0'){
+                          if (equation == '0') {
                             equation = '^';
                           }
                           else {
@@ -217,49 +256,43 @@ class _HomeState extends State<Home> {
                           }
                         });
                       },
-                        child:  Text('^',style: TextStyle(fontSize: 45,color:Colors.orangeAccent),),),
+                        child: Text('^', style: TextStyle(
+                            fontSize: 45, color: Colors.orangeAccent),),),
                     ),
                   ),
                   SizedBox(width: 124,),
                   GestureDetector(
-                    onLongPress:() {
+                    onLongPress: () {
                       setState(() {
                         equation = "0";
                       });
                     },
                     child: Padding(
                       padding: const EdgeInsets.only(right: 10),
-                      child: Align(alignment:Alignment.centerRight,child: IconButton(
+                      child: Align(
+                          alignment: Alignment.centerRight, child: IconButton(
                         onPressed: () {
-                          setState(() {equation = equation.substring(0 , equation.length -1);
-                          if (equation==''){
-                            equation = '0';
-                          }
-                          });                  },
-                        icon: Icon(Icons.backspace,color: Colors.orangeAccent,),iconSize: 30,)),
+                          setState(() {
+                            equation =
+                                equation.substring(0, equation.length - 1);
+                            if (equation == '') {
+                              equation = '0';
+                            }
+                          });
+                        },
+                        icon: Icon(
+                          Icons.backspace, color: Colors.orangeAccent,),
+                        iconSize: 30,)),
                     ),
                   ),
                 ],
               ),
               Row(
                 children: <Widget>[
-                  buildButton('C',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('(',Colors.white,18,1,Colors.orangeAccent),
-                  buildButton(')',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('÷',Colors.white,20,1,Colors.orangeAccent),
-
-
-
-                ],
-
-              ),
-              Row(
-                children: <Widget>[
-                  buildButton('7',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('8',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('9',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('×',Colors.white,20,1,Colors.orangeAccent),
-
+                  buildButton('C', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('(', Colors.white, 18, 1, Colors.orangeAccent),
+                  buildButton(')', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('÷', Colors.white, 20, 1, Colors.orangeAccent),
 
 
                 ],
@@ -267,10 +300,10 @@ class _HomeState extends State<Home> {
               ),
               Row(
                 children: <Widget>[
-                  buildButton('4',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('5',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('6',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('+',Colors.white,20,1,Colors.orangeAccent),
+                  buildButton('7', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('8', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('9', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('×', Colors.white, 20, 1, Colors.orangeAccent),
 
 
                 ],
@@ -278,10 +311,21 @@ class _HomeState extends State<Home> {
               ),
               Row(
                 children: <Widget>[
-                  buildButton('1',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('2',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('3',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('-',Colors.white,20,1,Colors.orangeAccent),
+                  buildButton('4', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('5', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('6', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('+', Colors.white, 20, 1, Colors.orangeAccent),
+
+
+                ],
+
+              ),
+              Row(
+                children: <Widget>[
+                  buildButton('1', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('2', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('3', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('-', Colors.white, 20, 1, Colors.orangeAccent),
 
 
                 ],
@@ -290,10 +334,10 @@ class _HomeState extends State<Home> {
 
               Row(
                 children: <Widget>[
-                  buildButton('0',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('00',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('.',Colors.white,20,1,Colors.orangeAccent),
-                  buildButton('=',Colors.orangeAccent,20,1,Colors.white),
+                  buildButton('0', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('00', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('.', Colors.white, 20, 1, Colors.orangeAccent),
+                  buildButton('=', Colors.orangeAccent, 20, 1, Colors.white),
                 ],
 
               ),
@@ -305,5 +349,100 @@ class _HomeState extends State<Home> {
 
     );
   }
+
+
+  void _listen() async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return VoicePay();
+      },
+    );
+    if (!_isListening) {
+      bool available = await _speech.initialize(
+        onStatus: (val) => print('onStatus: $val'),
+        onError: (val) => print('onError: $val'),
+      );
+      if (available) {
+        setState(() => _isListening = true);
+        _speech.listen(
+          onResult: (val) =>
+              setState(() {
+                _text = val.recognizedWords;
+                if (val.hasConfidenceRating && val.confidence > 0) {
+                  setState(() => _isListening = false);
+                  _speech.stop();
+                  Navigator.pop(context);
+                  print(_text);
+                  setState(() {
+                    if(_text.toLowerCase().contains('divided')){
+                      print("true");
+                      _text = _text.replaceAll('divided by' , '');
+                      _text = _text.replaceAll('  ' , '÷');
+                      equation = _text;
+                      print(_text);
+                    }
+                    if(_text.toLowerCase().contains('divide')){
+                      _text = _text.replaceAll('divide' , '');
+                      _text = _text.replaceAll('  ' , '÷');
+                      equation = _text;
+                      print(_text);
+                    }
+                    if(_text.toLowerCase().contains('subtract')){
+                      _text = _text.replaceAll("subtract", "-");
+                    }
+                    if(_text.toLowerCase().contains('x')){
+                      _text = _text.replaceAll("x", "×");
+                    }
+                    equation = _text;
+                    print(equation);
+                  });
+                }
+              }),
+        );
+      }
+    }
+  }
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
